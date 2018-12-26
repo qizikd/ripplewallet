@@ -159,19 +159,15 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 			} 
 		  }
 		};	
-		console.log(payment)
 		//获取Fee和Sequence
-		rippleApi.preparePayment(fromaddress, payment).then(prepared =>{
-			console.log("prepared: ",prepared);	
+		rippleApi.preparePayment(fromaddress, payment).then(prepared =>{	
 			logger.info(prepared)				
 			try{		
 				const txJSON = prepared.txJSON;
 				const secret = privkey;		
-				console.log("txJSON: ",txJSON)
 				//id signedTransaction		
 				var tx = rippleApi.sign(txJSON, secret); 
 				logger.info(tx)
-				console.log(tx)
 			}catch(err){
 				logger.error('签名tx失败:', err.message)
 				console.log((new Date()).toLocaleString(), "签名tx失败",err.message); 
@@ -183,7 +179,6 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 			}
 				
 			try{
-				console.log("signedTransaction: ",tx.signedTransaction)
 				rippleApi.submit(tx.signedTransaction).then(result => {	
 					logger.info("submit signedTransaction: ",result)				
 					if (result.resultCode == "tesSUCCESS"){
@@ -232,7 +227,7 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 
 module.exports = router;
 
-var server = app.listen(8888, function () {   //监听端口
+var server = app.listen(84, function () {   //监听端口
   var host = server.address().address
   var port = server.address().port
   console.log('Example app listening at http://%s:%s', host, port);
