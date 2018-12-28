@@ -23,9 +23,9 @@ log4js.configure({
 });
 const logger = log4js.getLogger('normal');
 
-//var serveraddress = 'wss://s.altnet.rippletest.net:51233' // Public rippled server hosted by Ripple, Inc.
+var serveraddress = 'wss://s.altnet.rippletest.net:51233' // Public rippled server hosted by Ripple, Inc.
 //var serveraddress = 'ws://127.0.0.1:6006'  //localhost
-var serveraddress = 'wss://s2.ripple.com:443' // Public rippled server hosted by Ripple, Inc.
+//var serveraddress = 'wss://s2.ripple.com:443' // Public rippled server hosted by Ripple, Inc.
   
 const rippleApi = new RippleAPI({
   server: serveraddress
