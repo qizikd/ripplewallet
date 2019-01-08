@@ -153,19 +153,7 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 			json.errcode = -3
 			res.end(JSON.stringify(json))	
 			return		
-		}
-		//根据私钥生成公钥
-		try{
-			var publickey = bytesToHex(Secp256k1.keyFromPrivate(privkey.slice(2)).getPublic().encodeCompressed());
-		}catch(err){
-			logger.error('私钥格式不对:', err.message)
-			console.log((new Date()).toLocaleString(), "私钥格式不对:",err.message); 
-			json.msg = "私钥格式不对"
-			json.errcode = -3
-			res.end(JSON.stringify(json))	
-			return		
-		}
-		
+		}		
 		logger.info("转账从",fromaddress,"到",toaddress,amount)
 		console.log((new Date()).toLocaleString(),"转账从",fromaddress,"到",toaddress,amount)		
 				
@@ -190,10 +178,28 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 			logger.info(prepared)				
 			try{		
 				const txJSON = prepared.txJSON;
-				//const secret = privkey;		
-				const keypair = { privateKey: privkey, publicKey: publickey };
-				//id signedTransaction		
-				var tx = rippleApi.sign(txJSON, keypair); 
+				//如果私钥是s开头
+				if (privkey.substr(0,1) == 's'){
+					const secret = privkey;	
+					//id signedTransaction		
+					var tx = rippleApi.sign(txJSON, secret);
+				}else{
+					//根据私钥生成公钥
+					try{
+						var publickey = bytesToHex(Secp256k1.keyFromPrivate(privkey.slice(2)).getPublic().encodeCompressed());
+					}catch(err){
+						logger.error('私钥格式不对:', err.message)
+						console.log((new Date()).toLocaleString(), "私钥格式不对:",err.message); 
+						json.msg = "私钥格式不对"
+						json.errcode = -3
+						res.end(JSON.stringify(json))	
+						return		
+					}				
+					const keypair = { privateKey: privkey, publicKey: publickey };
+					
+					//id signedTransaction		
+					var tx = rippleApi.sign(txJSON, keypair); 
+				}
 				logger.info(tx)
 			}catch(err){
 				logger.error('签名tx失败:', err.message)
