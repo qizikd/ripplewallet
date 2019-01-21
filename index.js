@@ -141,7 +141,8 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 			var arg = url.parse(req.url, true).query; 
 			var privkey = arg.privkey
 			var fromaddress = arg.fromaddress
-			var toaddress = arg.toaddress			
+			var toaddress = arg.toaddress	
+			var userTag_ = arg.tag
 			var amount = parseInt(arg.amount) 	
 			if (amount <= 0){
 				throw new Error(`amount:${amount} <= 0 `)
@@ -160,6 +161,7 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 		const payment = {
 		  "source": {
 			"address": fromaddress,
+			"tag":userTag_,
 			"maxAmount": {
 				"value": amount.toString(),
 				"currency": "drops"	
@@ -167,6 +169,7 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 		  },
 		  "destination": {
 			"address": toaddress,
+			"tag":userTag_,
 			"amount":{
 				"value": amount.toString(),
 				"currency": "drops"	
