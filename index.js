@@ -143,6 +143,7 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 			var fromaddress = arg.fromaddress
 			var toaddress = arg.toaddress	
 			var userTag_ = arg.tag
+			console.log(userTag_);
 			var amount = parseInt(arg.amount) 	
 			if (amount <= 0){
 				throw new Error(`amount:${amount} <= 0 `)
@@ -161,7 +162,6 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 		const payment = {
 		  "source": {
 			"address": fromaddress,
-			"tag":userTag_,
 			"maxAmount": {
 				"value": amount.toString(),
 				"currency": "drops"	
@@ -169,16 +169,18 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 		  },
 		  "destination": {
 			"address": toaddress,
-			"tag":userTag_,
+			//"tag":userTag_,
 			"amount":{
 				"value": amount.toString(),
 				"currency": "drops"	
 			} 
 		  }
 		};	
+		if(userTag_ != ""){
+			payment.destination.tag = userTag_;
+		}
 		//获取Fee和Sequence
-		rippleApi.preparePayment(fromaddress, payment).then(prepared =>{	
-			logger.info(prepared)				
+		rippleApi.preparePayment(fromaddress, payment).then(prepared =>{					
 			try{		
 				const txJSON = prepared.txJSON;
 				//如果私钥是s开头
@@ -252,7 +254,14 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 			res.end(JSON.stringify(json))
 			return
 		});
-	})
+	}).catch((err) => {
+			logger.error('apiPromise失败:', err.message)
+			console.log((new Date()).toLocaleString(),"apiPromise失败",err.message);     //网络请求失败返回的数据  
+			json.errcode = -1
+			json.msg = "交易失败"
+			res.end(JSON.stringify(json))
+			return
+	});
 })
 
 module.exports = router;
