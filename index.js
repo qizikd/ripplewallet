@@ -176,13 +176,21 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 			} 
 		  }
 		};	
-		if(userTag_ != ""){
-			payment.destination.tag = userTag_;
-		}
+		//if(userTag_ != ""){
+		//	payment.destination.tag = userTag_;
+		//}
 		//获取Fee和Sequence
 		rippleApi.preparePayment(fromaddress, payment).then(prepared =>{					
 			try{		
-				const txJSON = prepared.txJSON;
+				console.log(prepared.txJSON);
+				//ptxJSON = JSON.parse(prepared.txJSON);
+				if(userTag_ != ""){
+					ptxJSON.DestinationTag = userTag_;
+				}			   
+				var txJSON = JSON.stringify(ptxJSON);
+				console.log(txJSON);
+				//return;
+				//const txJSON = prepared.txJSON;
 				//如果私钥是s开头
 				if (privkey.substr(0,1) == 's'){
 					const secret = privkey;	
@@ -201,7 +209,7 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 						return		
 					}				
 					const keypair = { privateKey: privkey, publicKey: publickey };
-					
+
 					//id signedTransaction		
 					var tx = rippleApi.sign(txJSON, keypair); 
 				}
