@@ -243,20 +243,10 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 				rippleApi.submit(tx.signedTransaction).then(result => {	
 					logger.info("submit signedTransaction: ",result)				
 					if (result.resultCode == "tesSUCCESS"){
-						rippleApi.getTransaction(tx.id).then(transaction => {
-							console.log(transaction);
-							json.errcode = 0
-							json.txid = tx.id
-							res.end(JSON.stringify(json))					
-							console.log((new Date()).toLocaleString(),"交易成功:",json)	 							
-						}).catch( (err) => {
-							logger.error('txid非法:', tx.id, err.message)
-							console.log((new Date()).toLocaleString(), "txid非法", tx.id, err.message); 			
-							json.msg = "交易失败"
-							json.errcode = -6
-							res.end(JSON.stringify(json))	
-							return	
-						});	
+						json.errcode = 0
+						json.txid = tx.id
+						res.end(JSON.stringify(json))					
+						console.log((new Date()).toLocaleString(),"交易成功:",json)	 	
 					}else{
 						json.errcode = -5
 						json.msg = "交易失败"
