@@ -113,12 +113,17 @@ app.get('/wallet/xrp/balance', function (req, res, next){
 				json.errcode = -1
 				res.end(JSON.stringify(json))
 				console.log((new Date()).toLocaleString(),json);     //网络请求失败返回的数据 
-			}).catch((err) => {
-				logger.error('获取余额失败:', err.message)				
-				json.errcode = -1
-				json.msg = "获取余额失败"
+			}).catch((err) => {				
+				logger.error('获取余额返回失败:', err.message)			
+				if (err.message == 'actNotFound'){
+						json.amount = 0
+						json.errcode = 0					
+				}else{
+					json.errcode = -1
+					json.msg = "获取余额失败"					
+				}
 				res.end(JSON.stringify(json))
-				console.log((new Date()).toLocaleString(),"获取余额失败",json);     //网络请求失败返回的数据  
+				console.log((new Date()).toLocaleString(),"获取余额返回失败",json);     //网络请求失败返回的数据  
 			});
 		}catch(err){
 			logger.error('请求获取余额异常:', err.message)
