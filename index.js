@@ -217,8 +217,6 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 					const secret = privkey;	
 					//id signedTransaction		
 					var tx = rippleApi.sign(txJSON, secret);
-					var keypair = keypairs.deriveKeypair(secret);
-					return
 				}else{
 					//根据私钥生成公钥
 					try{
