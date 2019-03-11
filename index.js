@@ -217,20 +217,27 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 					const secret = privkey;	
 					//id signedTransaction		
 					var tx = rippleApi.sign(txJSON, secret);
+					var keypair = keypairs.deriveKeypair(secret);
+					return
 				}else{
 					//根据私钥生成公钥
 					try{
-						var publickey = bytesToHex(Secp256k1.keyFromPrivate(privkey.slice(2)).getPublic().encodeCompressed());
+						var publickey;
+						if (privkey.length == 66){
+							publickey = bytesToHex(Secp256k1.keyFromPrivate(privkey.slice(2)).getPublic().encodeCompressed());
+						}else{
+							publickey = bytesToHex(Secp256k1.keyFromPrivate(privkey).getPublic().encodeCompressed());
+							privkey = '00' + privkey;
+						}
 					}catch(err){
 						logger.error('私钥格式不对:', err.message)
 						console.log((new Date()).toLocaleString(), "私钥格式不对:",err.message); 
-						json.msg = "私钥格式不对"
-						json.errcode = -3
-						res.end(JSON.stringify(json))	
+						json.msg = "私钥格式不对";
+						json.errcode = -3;
+						res.end(JSON.stringify(json));
 						return		
 					}				
 					const keypair = { privateKey: privkey, publicKey: publickey };
-
 					//id signedTransaction		
 					var tx = rippleApi.sign(txJSON, keypair); 
 				}
