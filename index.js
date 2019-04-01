@@ -160,44 +160,162 @@ app.get('/wallet/xrp/gettransaction', function (req, res, next) {
 });
 
 app.get('/wallet/xrp/sendto', function (req, res, next) {	 
-	logger.info("转账Url",req.url)
-	console.log("转账Url",req.url)	
-	var json = {};
+	logger.info("转账Url",req.url);
+	console.log("转账Url",req.url);
+	var arg = url.parse(req.url, true).query; 
+	var privkey = arg.privkey;
+	var fromaddress = arg.fromaddress;
+	var toaddress = arg.toaddress;
+	var tag = arg.tag;
+	var amount = arg.amount; 
+	sendto(res,privkey,fromaddress,toaddress,tag,amount)
+});
+
+var multipart = require('connect-multiparty');
+var multipartMiddleware = multipart();  
+app.post('/wallet/xrp/sendto',multipartMiddleware, function (req, res, next) {	
+	var privkey = req.body.privkey;
+	var fromaddress = req.body.fromaddress;
+	var toaddress = req.body.toaddress;	
+	var tag = req.body.tag;
+	var amount = req.body.amount;
+	sendto(res,privkey,fromaddress,toaddress,tag,amount)
+})
+
+app.post('/wallet/xrp/setaccount',multipartMiddleware, function (req, res, next) {	
+	var account = req.body.account;
+	var privkey = req.body.privkey;		
+	var required = req.body.required === "yes" ? true : false;
+	console.log("账号",account,"私钥",privkey,"required", required);
+	var json = {};	
 	apiPromise.then(()=>{	
-		try
-		{
-			var arg = url.parse(req.url, true).query; 
-			var privkey = arg.privkey
-			var fromaddress = arg.fromaddress
-			var toaddress = arg.toaddress	
-			var userTag_ = arg.tag
-			var amount = parseInt(arg.amount) 	
-			if (amount <= 0){
-				throw new Error(`amount:${amount} <= 0 `)
+		const address = account;	
+		const settings = {
+				"requireDestinationTag": required
+		};
+		
+		rippleApi.prepareSettings(address, settings).then(prepared => {			
+			try{
+				var ptxJSON = JSON.parse(prepared.txJSON);	   
+				var txJSON = JSON.stringify(ptxJSON);
+				console.log((new Date()).toLocaleString(), "交易详情:", txJSON);						
+				//如果私钥是s开头
+				if (privkey.substr(0,1) == 's'){
+					const secret = privkey;	
+					//id signedTransaction		
+					var tx = rippleApi.sign(txJSON, secret);
+				}else{
+					//根据私钥生成公钥
+					try{
+						var publickey;
+						if (privkey.length == 66){
+							publickey = bytesToHex(Secp256k1.keyFromPrivate(privkey.slice(2)).getPublic().encodeCompressed());
+						}else{
+							publickey = bytesToHex(Secp256k1.keyFromPrivate(privkey).getPublic().encodeCompressed());
+							privkey = '00' + privkey;
+						}
+					}catch(err){
+						logger.error('私钥格式不对:', err.message)
+						console.log((new Date()).toLocaleString(), "私钥格式不对:",err.message); 
+						json.msg = "私钥格式不对";
+						json.errcode = -3;
+						res.end(JSON.stringify(json));
+						return		
+					}				
+					const keypair = { privateKey: privkey, publicKey: publickey };
+					//id signedTransaction		
+					var tx = rippleApi.sign(txJSON, keypair); 
+				}
+				logger.info("tx:",tx)
+			}catch(err){
+				logger.error('签名tx失败:', err)
+				console.log((new Date()).toLocaleString(), "签名tx失败",err.message); 
+				json.msg = "交易失败"
+				json.errcode = -2
+				res.end(JSON.stringify(json))	
+				return	
 			}
-		}catch(err){
-			logger.error('金额非法:', err.message)
-			console.log((new Date()).toLocaleString(), "金额非法",err.message); 			
-			json.msg = "金额非法"
-			json.errcode = -3
-			res.end(JSON.stringify(json))	
-			return		
-		}		
-		logger.info("转账从",fromaddress,"到",toaddress,amount)
-		console.log((new Date()).toLocaleString(),"转账从",fromaddress,"到",toaddress,amount)		
-				
+			try{
+				rippleApi.submit(tx.signedTransaction).then(result => {	
+					logger.info("submit signedTransaction: ",result)				
+					if (result.resultCode == "tesSUCCESS"){
+						json.errcode = 0
+						json.txid = tx.id
+						res.end(JSON.stringify(json))					
+						console.log((new Date()).toLocaleString(),"交易成功:",json)	 	
+					}else{
+						json.errcode = -5
+						json.msg = "交易失败"
+						res.end(JSON.stringify(json))				
+						console.log("submit signedTransaction: ",result)					
+						console.log((new Date()).toLocaleString(),"交易失败:",json)	 					
+					}
+				}).catch( (err) => {
+					logger.error('发送tx请求失败:', err.message)
+					console.log((new Date()).toLocaleString(), "发送tx请求失败",err.message);     //网络请求失败返回的数据  		
+					json.errcode = -4
+					json.msg = "交易失败"
+					res.end(JSON.stringify(json))
+					return
+				});			
+			}catch(err){
+				logger.error('发生未知异常:', err.message)
+				console.log((new Date()).toLocaleString(), "发生未知异常",err.message); 
+				json.msg = "交易失败"
+				json.errcode = -1
+				res.end(JSON.stringify(json))	
+				return		
+			}				
+		}).catch( (err) => {
+				logger.error('构造Settings失败:', err.message)
+				console.log((new Date()).toLocaleString(), "构造Settings失败",err.message);     //网络请求失败返回的数据  		
+				json.errcode = -4
+				json.msg = "交易失败"
+				res.end(JSON.stringify(json))
+				return
+			});									
+	}).catch((err) => {
+			logger.error('apiPromise失败:', err.message)
+			console.log((new Date()).toLocaleString(),"apiPromise失败",err.message);     //网络请求失败返回的数据  
+			json.errcode = -1
+			json.msg = "交易失败"
+			res.end(JSON.stringify(json))
+			return
+	});			
+})
+
+function sendto(res,privkey,fromaddress,toaddress,tag,amount){
+	var json = {};
+	try
+	{
+		var _amount = parseInt(amount) 	
+		if (_amount <= 0){
+			throw new Error(`amount:${_amount} <= 0 `)
+		}
+	}catch(err){
+		logger.error('金额非法:', err.message)
+		console.log((new Date()).toLocaleString(), "金额非法",err.message); 			
+		json.msg = "金额非法"
+		json.errcode = -3
+		res.end(JSON.stringify(json))	
+		return		
+	}		
+	logger.info("转账从",fromaddress,"到",toaddress,_amount)
+	console.log((new Date()).toLocaleString(),"转账从",fromaddress,"到",toaddress,_amount)	
+		
+	apiPromise.then(()=>{					
 		const payment = {
 		  "source": {
 			"address": fromaddress,
 			"maxAmount": {
-				"value": amount.toString(),
+				"value": _amount.toString(),
 				"currency": "drops"	
 			}			
 		  },
 		  "destination": {
 			"address": toaddress,
 			"amount":{
-				"value": amount.toString(),
+				"value": _amount.toString(),
 				"currency": "drops"	
 			} 
 		  }
@@ -207,8 +325,8 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 			try{		
 				var ptxJSON = JSON.parse(prepared.txJSON);
 				//这里根据客户输入增加DestinationTag标记
-				if(userTag_ != ""){
-					ptxJSON.DestinationTag = userTag_;
+				if(tag != ""){
+					ptxJSON.DestinationTag = tag;
 				}			   
 				var txJSON = JSON.stringify(ptxJSON);
 				console.log((new Date()).toLocaleString(), "交易详情:", txJSON);				
@@ -295,8 +413,8 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 			json.msg = "交易失败"
 			res.end(JSON.stringify(json))
 			return
-	});
-});
+	});	
+}
 
 module.exports = router;
 
