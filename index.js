@@ -115,7 +115,7 @@ app.get('/wallet/xrp/balance', function (req, res, next){
 				console.log((new Date()).toLocaleString(),json);     //网络请求失败返回的数据 
 			}).catch((err) => {				
 				logger.error('获取余额返回失败:', err.message)			
-				if (trimRight(trimLeft(err.message)) == 'actNotFound' || trimRight(trimLeft(err.message)) == 'Account not found'){
+				if (err.message == 'actNotFound' || err.message == 'Account not found'){
 						json.amount = 0
 						json.errcode = 0					
 				}else{
