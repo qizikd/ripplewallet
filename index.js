@@ -66,6 +66,10 @@ app.get('/wallet/xrp/generate', function (req, res, next){
 			json.address = account.address
 			json.secret = account.secret
 			json.errcode = 0
+			json.code = 0
+			json.data = {}
+			json.data.address = account.address
+			json.data.secret = account.secret			
 			res.end(JSON.stringify(json))
 			console.log((new Date()).toLocaleString(),"新账户信息:",account)
 		}catch(err){
@@ -74,6 +78,7 @@ app.get('/wallet/xrp/generate', function (req, res, next){
 			var json = {};
 			json.msg = "生成账号失败异常"
 			json.errcode = -1
+			json.code = -1
 			res.end(JSON.stringify(json))			 
 		}	
 	});
@@ -90,6 +95,7 @@ app.get('/wallet/xrp/balance', function (req, res, next){
 	if (address.substr(0,1) != 'r'){		
 		json.msg = "地址非法"
 		json.errcode = -3
+		json.code = -3
 		res.end(JSON.stringify(json))	
 		logger.error('地址非法:', address)
 		console.log((new Date()).toLocaleString(),"地址非法:",json)
@@ -104,6 +110,9 @@ app.get('/wallet/xrp/balance', function (req, res, next){
 					if (balance[i].currency == "XRP"){										
 						json.amount = (parseFloat(balance[i].value) * 1000000).toString();
 						json.errcode = 0
+						json.code = 0
+						json.data = {}
+						json.data.amount = (parseFloat(balance[i].value) * 1000000).toString();
 						res.end(JSON.stringify(json))
 						console.log((new Date()).toLocaleString(),"余额:",json)
 						return;
@@ -111,15 +120,20 @@ app.get('/wallet/xrp/balance', function (req, res, next){
 				}
 				json.msg = "没有查询到记录"
 				json.errcode = -1
+				json.code = -1
 				res.end(JSON.stringify(json))
 				console.log((new Date()).toLocaleString(),json);     //网络请求失败返回的数据 
 			}).catch((err) => {				
 				logger.error('获取余额返回失败:', err.message)			
 				if (err.message == 'actNotFound' || err.message == 'Account not found.'){
 						json.amount = 0
-						json.errcode = 0					
+						json.errcode = 0	
+						json.code = 0
+						json.data = {}						
+						json.data.amount = 0
 				}else{
 					json.errcode = -1
+					json.code = -1
 					json.msg = "获取余额失败"					
 				}
 				res.end(JSON.stringify(json))
@@ -129,6 +143,7 @@ app.get('/wallet/xrp/balance', function (req, res, next){
 			logger.error('请求获取余额异常:', err.message)
 			json.msg = "获取余额异常"
 			json.errcode = -1
+			json.code = -1
 			res.end(JSON.stringify(json))			 
 			console.log((new Date()).toLocaleString(),"请求获取余额异常",json);     //网络请求失败返回的数据  
 		}
@@ -145,6 +160,7 @@ app.get('/wallet/xrp/gettransaction', function (req, res, next) {
 		rippleApi.getTransaction(id).then(transaction => {
 			console.log(transaction);
 			json.errcode = 0
+			json.code = 0
 			json.data = transaction
 			res.end(JSON.stringify(json))					
 			console.log((new Date()).toLocaleString(),"交易查询成功:",json)	 							
@@ -153,6 +169,7 @@ app.get('/wallet/xrp/gettransaction', function (req, res, next) {
 			console.log((new Date()).toLocaleString(), "txid非法",err.message); 			
 			json.msg = "txid非法"
 			json.errcode = -1
+			json.code = -1
 			res.end(JSON.stringify(json))	
 			return	
 		});			
@@ -219,6 +236,7 @@ app.post('/wallet/xrp/setaccount',multipartMiddleware, function (req, res, next)
 						console.log((new Date()).toLocaleString(), "私钥格式不对:",err.message); 
 						json.msg = "私钥格式不对";
 						json.errcode = -3;
+						json.code = -3;
 						res.end(JSON.stringify(json));
 						return		
 					}				
@@ -230,8 +248,9 @@ app.post('/wallet/xrp/setaccount',multipartMiddleware, function (req, res, next)
 			}catch(err){
 				logger.error('签名tx失败:', err)
 				console.log((new Date()).toLocaleString(), "签名tx失败",err.message); 
-				json.msg = "交易失败"
-				json.errcode = -2
+				json.msg = "交易失败";
+				json.errcode = -2;
+				json.code = -2;
 				res.end(JSON.stringify(json))	
 				return	
 			}
@@ -240,11 +259,15 @@ app.post('/wallet/xrp/setaccount',multipartMiddleware, function (req, res, next)
 					logger.info("submit signedTransaction: ",result)				
 					if (result.resultCode == "tesSUCCESS"){
 						json.errcode = 0
+						json.code = 0
 						json.txid = tx.id
+						json.data = {};
+						json.data.txid = tx.id;
 						res.end(JSON.stringify(json))					
 						console.log((new Date()).toLocaleString(),"交易成功:",json)	 	
 					}else{
 						json.errcode = -5
+						json.code = -5
 						json.msg = "交易失败"
 						res.end(JSON.stringify(json))				
 						console.log("submit signedTransaction: ",result)					
@@ -254,6 +277,7 @@ app.post('/wallet/xrp/setaccount',multipartMiddleware, function (req, res, next)
 					logger.error('发送tx请求失败:', err.message)
 					console.log((new Date()).toLocaleString(), "发送tx请求失败",err.message);     //网络请求失败返回的数据  		
 					json.errcode = -4
+					json.code = -4
 					json.msg = "交易失败"
 					res.end(JSON.stringify(json))
 					return
@@ -263,6 +287,7 @@ app.post('/wallet/xrp/setaccount',multipartMiddleware, function (req, res, next)
 				console.log((new Date()).toLocaleString(), "发生未知异常",err.message); 
 				json.msg = "交易失败"
 				json.errcode = -1
+				json.code = -1
 				res.end(JSON.stringify(json))	
 				return		
 			}				
@@ -270,6 +295,7 @@ app.post('/wallet/xrp/setaccount',multipartMiddleware, function (req, res, next)
 				logger.error('构造Settings失败:', err.message)
 				console.log((new Date()).toLocaleString(), "构造Settings失败",err.message);     //网络请求失败返回的数据  		
 				json.errcode = -4
+				json.code = -4
 				json.msg = "交易失败"
 				res.end(JSON.stringify(json))
 				return
@@ -278,6 +304,7 @@ app.post('/wallet/xrp/setaccount',multipartMiddleware, function (req, res, next)
 			logger.error('apiPromise失败:', err.message)
 			console.log((new Date()).toLocaleString(),"apiPromise失败",err.message);     //网络请求失败返回的数据  
 			json.errcode = -1
+			json.code = -1
 			json.msg = "交易失败"
 			res.end(JSON.stringify(json))
 			return
@@ -297,6 +324,7 @@ function sendto(res,privkey,fromaddress,toaddress,tag,amount){
 		console.log((new Date()).toLocaleString(), "金额非法",err.message); 			
 		json.msg = "金额非法"
 		json.errcode = -3
+		json.code = -3
 		res.end(JSON.stringify(json))	
 		return		
 	}		
@@ -350,6 +378,7 @@ function sendto(res,privkey,fromaddress,toaddress,tag,amount){
 						console.log((new Date()).toLocaleString(), "私钥格式不对:",err.message); 
 						json.msg = "私钥格式不对";
 						json.errcode = -3;
+						json.code = -3;
 						res.end(JSON.stringify(json));
 						return		
 					}				
@@ -363,6 +392,7 @@ function sendto(res,privkey,fromaddress,toaddress,tag,amount){
 				console.log((new Date()).toLocaleString(), "签名tx失败",err.message); 
 				json.msg = "交易失败"
 				json.errcode = -2
+				json.code = -2
 				res.end(JSON.stringify(json))	
 				return	
 			}
@@ -372,11 +402,15 @@ function sendto(res,privkey,fromaddress,toaddress,tag,amount){
 					logger.info("submit signedTransaction: ",result)				
 					if (result.resultCode == "tesSUCCESS"){
 						json.errcode = 0
+						json.code = 0
 						json.txid = tx.id
+						json.data = {}
+						json.data.txid = tx.id
 						res.end(JSON.stringify(json))					
 						console.log((new Date()).toLocaleString(),"交易成功:",json)	 	
 					}else{
 						json.errcode = -5
+						json.code = -5
 						json.msg = "交易失败"
 						res.end(JSON.stringify(json))				
 						console.log("submit signedTransaction: ",result)					
@@ -386,6 +420,7 @@ function sendto(res,privkey,fromaddress,toaddress,tag,amount){
 					logger.error('发送tx请求失败:', err.message)
 					console.log((new Date()).toLocaleString(), "发送tx请求失败",err.message);     //网络请求失败返回的数据  		
 					json.errcode = -4
+					json.code = -4
 					json.msg = "交易失败"
 					res.end(JSON.stringify(json))
 					return
@@ -395,6 +430,7 @@ function sendto(res,privkey,fromaddress,toaddress,tag,amount){
 				console.log((new Date()).toLocaleString(), "发生未知异常",err.message); 
 				json.msg = "交易失败"
 				json.errcode = -1
+				json.code = -1
 				res.end(JSON.stringify(json))	
 				return		
 			}				
@@ -402,6 +438,7 @@ function sendto(res,privkey,fromaddress,toaddress,tag,amount){
 			logger.error('preparePayment失败:', err.message)
 			console.log((new Date()).toLocaleString(),"preparePayment失败",err.message);     //网络请求失败返回的数据  
 			json.errcode = -1
+			json.code = -1
 			json.msg = "交易失败"
 			res.end(JSON.stringify(json))
 			return
@@ -410,6 +447,7 @@ function sendto(res,privkey,fromaddress,toaddress,tag,amount){
 			logger.error('apiPromise失败:', err.message)
 			console.log((new Date()).toLocaleString(),"apiPromise失败",err.message);     //网络请求失败返回的数据  
 			json.errcode = -1
+			json.code = -1
 			json.msg = "交易失败"
 			res.end(JSON.stringify(json))
 			return
@@ -417,8 +455,13 @@ function sendto(res,privkey,fromaddress,toaddress,tag,amount){
 }
 
 module.exports = router;
+var port = 84;
+var args = process.argv.splice(2)
+if(args.length == 1){
+	port = parseInt(args[0]);
+}
 
-var server = app.listen(84, function () {   //监听端口
+var server = app.listen(port, function () {   //监听端口
   var host = server.address().address
   var port = server.address().port
   console.log('Example app listening at http://%s:%s', host, port);
