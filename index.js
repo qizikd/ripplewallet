@@ -2,6 +2,7 @@ var express = require('express');
 var url = require('url');
 var router = express.Router();
 var app = express();
+var bodyParser = require("body-parser");  
 const RippleAPI = require('ripple-lib').RippleAPI;
 const keypairs = require('ripple-keypairs')
 const elliptic = require('elliptic')
@@ -55,6 +56,7 @@ function bytesToHex(a) {
   }).join('')
 }
 
+app.use(bodyParser.urlencoded({ extended: false })); 
 app.get('/wallet/xrp/generate', function (req, res, next){
 	logger.info("生成账号Url",req.url)
 	console.log("生成账号Url",req.url)	
@@ -189,7 +191,7 @@ app.get('/wallet/xrp/sendto', function (req, res, next) {
 });
 
 var multipart = require('connect-multiparty');
-var multipartMiddleware = multipart();  
+var multipartMiddleware = multipart();   
 app.post('/wallet/xrp/sendto',multipartMiddleware, function (req, res, next) {	
 	var privkey = req.body.privkey;
 	var fromaddress = req.body.fromaddress;
