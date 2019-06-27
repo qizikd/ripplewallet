@@ -179,8 +179,8 @@ app.get('/wallet/xrp/gettransaction', function (req, res, next) {
 });
 
 app.get('/wallet/xrp/sendto', function (req, res, next) {	 
-	logger.info("转账Url",req.url);
-	console.log("转账Url",req.url);
+	//logger.info("转账Url",req.url);
+	//console.log("转账Url",req.url);
 	var arg = url.parse(req.url, true).query; 
 	var privkey = arg.privkey;
 	var fromaddress = arg.fromaddress;
@@ -205,7 +205,7 @@ app.post('/wallet/xrp/setaccount',multipartMiddleware, function (req, res, next)
 	var account = req.body.account;
 	var privkey = req.body.privkey;		
 	var required = req.body.required === "yes" ? true : false;
-	console.log("账号",account,"私钥",privkey,"required", required);
+	//console.log("账号",account,"私钥",privkey,"required", required);
 	var json = {};	
 	apiPromise.then(()=>{	
 		const address = account;	
