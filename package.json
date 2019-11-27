@@ -13,6 +13,6 @@
     "connect-multiparty": "^2.2.0",
     "express": "^4.17.1",
     "log4js": "^3.0.6",
-    "ripple-lib": "^1.1.2"
+    "ripple-lib": "1.2.3"
   }
 }
