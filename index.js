@@ -402,10 +402,11 @@ function sendto(res,privkey,fromaddress,toaddress,tag,amount){
 			try{
 				rippleApi.submit(tx.signedTransaction).then(result => {	
 					logger.info("submit signedTransaction: ",result)				
-					if (result.resultCode == "tesSUCCESS"){
+					if ((result.resultCode == "tesSUCCESS") || (result.resultCode == "terQUEUED")){
 						json.errcode = 0
 						json.code = 0
 						json.txid = tx.id
+						json.msg + result.resultCode
 						json.data = {}
 						json.data.txid = tx.id
 						res.end(JSON.stringify(json))					
